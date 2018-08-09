@@ -67,6 +67,17 @@ class QueueManager implements FactoryContract, MonitorContract
     }
 
     /**
+     * Register an event listener for the after jobs chain event.
+     *
+     * @param  mixed  $callback
+     * @return void
+     */
+    public function afterChain($callback)
+    {
+        $this->app['events']->listen(Events\JobsQueueProcessed::class, $callback);
+    }
+
+    /**
      * Register an event listener for the exception occurred job event.
      *
      * @param  mixed  $callback
