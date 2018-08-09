@@ -47,6 +47,20 @@ trait Queueable
     public $chained = [];
 
     /**
+     * User defined data for the queued chain.
+     *
+     * @var mixed
+     */
+    public $chainData;
+
+    /**
+     * Indicates wheather this queueable is chain or not.
+     *
+     * @var boolean
+     */
+    public $inChain = false;
+
+    /**
      * Set the desired connection for the job.
      *
      * @param  string|null  $connection
@@ -117,13 +131,17 @@ trait Queueable
      * Set the jobs that should run if this job is successful.
      *
      * @param  array  $chain
+     * @param  mixed  $data
      * @return $this
      */
-    public function chain($chain)
+    public function chain($chain, $data = null)
     {
         $this->chained = collect($chain)->map(function ($job) {
             return serialize($job);
         })->all();
+
+        $this->inChain = true;
+        $this->chainData = $data;
 
         return $this;
     }
@@ -138,6 +156,8 @@ trait Queueable
         if (! empty($this->chained)) {
             dispatch(tap(unserialize(array_shift($this->chained)), function ($next) {
                 $next->chained = $this->chained;
+                $next->inChain = $this->inChain;
+                $next->chainData = $this->chainData;
 
                 $next->onConnection($next->connection ?: $this->chainConnection);
                 $next->onQueue($next->queue ?: $this->chainQueue);

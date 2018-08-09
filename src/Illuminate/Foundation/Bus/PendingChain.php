@@ -19,16 +19,25 @@ class PendingChain
     public $chain;
 
     /**
+     * User defined chain data.
+     *
+     * @var array
+     */
+    public $chainData;
+
+    /**
      * Create a new PendingChain instance.
      *
      * @param  string  $class
      * @param  array  $chain
+     * @param  array  $data
      * @return void
      */
-    public function __construct($class, $chain)
+    public function __construct($class, $chain, $data)
     {
         $this->class = $class;
         $this->chain = $chain;
+        $this->chainData = $data;
     }
 
     /**
@@ -40,6 +49,6 @@ class PendingChain
     {
         return (new PendingDispatch(
             new $this->class(...func_get_args())
-        ))->chain($this->chain);
+        ))->chain($this->chain, $this->chainData);
     }
 }

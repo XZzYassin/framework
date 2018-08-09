@@ -30,10 +30,11 @@ trait Dispatchable
      * Set the jobs that should run if this job is successful.
      *
      * @param  array  $chain
+     * @param  mixed  $data - User defined data for the chain.
      * @return \Illuminate\Foundation\Bus\PendingChain
      */
-    public static function withChain($chain)
+    public static function withChain(array $chain, $data = null)
     {
-        return new PendingChain(get_called_class(), $chain);
+        return new PendingChain(get_called_class(), $chain, $data);
     }
 }

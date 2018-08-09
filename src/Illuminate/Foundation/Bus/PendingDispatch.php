@@ -14,9 +14,17 @@ class PendingDispatch
     protected $job;
 
     /**
+     * The data.
+     *
+     * @var mixed
+     */
+    protected $data;
+
+    /**
      * Create a new pending job dispatch.
      *
      * @param  mixed  $job
+     * @param  mixed  $data
      * @return void
      */
     public function __construct($job)
@@ -93,11 +101,13 @@ class PendingDispatch
      * Set the jobs that should run if this job is successful.
      *
      * @param  array  $chain
+     * @param  array  $data - User defined data for this chain.
      * @return $this
      */
-    public function chain($chain)
+    public function chain($chain, $data = null)
     {
-        $this->job->chain($chain);
+        $this->job->chain($chain, $data);
+        $this->chainData = $data;
 
         return $this;
     }
