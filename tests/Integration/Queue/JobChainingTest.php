@@ -4,10 +4,12 @@ namespace Illuminate\Tests\Integration\Queue;
 
 use Illuminate\Bus\Queueable;
 use Orchestra\Testbench\TestCase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\Events\JobsQueueProcessed;
 
 /**
  * @group integration
@@ -54,6 +56,42 @@ class JobChainingTest extends TestCase
 
         $this->assertTrue(JobChainingTestFirstJob::$ran);
         $this->assertTrue(JobChainingTestSecondJob::$ran);
+    }
+
+    public function test_jobs_queue_processed_event_is_being_dispatched()
+    {
+        Event::fake();
+
+        JobChainingTestFirstJob::withChain([
+            new JobChainingTestSecondJob,
+        ])->dispatch();
+
+        Event::assertDispatched(JobsQueueProcessed::class);
+    }
+
+    public function test_chain_data_is_present_in_jobs_queue_processed_event()
+    {
+        $test = $this;
+        Event::listen(JobsQueueProcessed::class, function ($event) use ($test) {
+            $test->assertArraySubset(['fake' => 'data'], $event->chainData);
+        });
+
+        JobChainingTestFirstJob::withChain([
+            new JobChainingTestSecondJob,
+        ], [ 'fake' => 'data' ])->dispatch();
+    }
+
+    public function test_chain_data_can_be_altered()
+    {
+        $test = $this;
+        Event::listen(JobsQueueProcessed::class, function ($event) use ($test) {
+            $test->assertEquals('bar', $event->chainData);
+        });
+
+        JobChainingTestFirstJob::withChain([
+            new JobChainingTestAlteringDataJob,
+            new JobChainingTestThirdJob,
+        ], 'foo')->dispatch();
     }
 
     public function test_jobs_chained_on_explicit_delete()
@@ -257,5 +295,15 @@ class JobChainingTestFailingJob implements ShouldQueue
     public function handle()
     {
         $this->fail();
+    }
+}
+
+class JobChainingTestAlteringDataJob implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable;
+
+    public function handle()
+    {
+        $this->chainData = 'bar';
     }
 }
