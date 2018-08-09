@@ -2,6 +2,9 @@
 
 namespace Illuminate\Bus;
 
+use Illuminate\Container\Container;
+use Illuminate\Queue\Events\JobsQueueProcessed;
+
 trait Queueable
 {
     /**
@@ -165,6 +168,24 @@ trait Queueable
                 $next->chainConnection = $this->chainConnection;
                 $next->chainQueue = $this->chainQueue;
             }));
+        }
+        elseif ($this->inChain) {
+            $this->raiseAfterJobsChainEvent();
+        }
+    }
+
+    /**
+     * Raise the after queue jobs chain event.
+     *
+     * @return void
+     */
+    protected function raiseAfterJobsChainEvent()
+    {
+        $container = Container::getInstance();
+        if ($container->bound('events')) {
+            $container['events']->dispatch(
+                new JobsQueueProcessed($this->chainData)
+            );
         }
     }
 }
